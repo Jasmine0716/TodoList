@@ -1,0 +1,189 @@
+<!-- 每一个事项的子组件 -->
+<template>
+  <list-item>
+    <div class="ListItem" if="{{tarstate==content.state}}">
+        <div class='col-wrap'>
+          <!-- 事项名 -->
+          <div class='row-wrap'>
+            <img class='state-img' if ='{{content.state==="Todo"}}' src='/common/todo-face.png'>
+            <img class='state-img' if = '{{content.state==="Doing"}}' src='/common/doing-face.png'>
+            <img class='state-img' if = '{{content.state==="Done"}}' src='/common/done-face.png'>
+            <text class="ListTxt" onclick="changeItem">{{name}}</text>
+          </div>
+
+          <!-- 时间日期 -->
+          <div class="row-wrap">
+            <img class='date-img' src='/common/calendar.png'>
+            <text class="DateTxt" onclick="changeItem">{{content.date}}</text>
+            <img class='time-img' src='/common/time.png'>
+            <text class="TimeTxt" onclick="changeItem">{{content.time}}</text>
+          </div>
+
+          <!-- 改变状态 -->
+          <div class="row-wrap">
+            <!-- 当状态为Todo -->
+            <div class="changeState todoS" if="{{content.state=='Todo'}}">
+              <img class='change-state-img' src='/common/doing.png'>
+              <text class="change" onclick="modifyState('Doing')" >Do it now!</text>
+              <text>|</text>
+              <img class='change-state-img' src='/common/done.png'>
+              <text class="change" onclick="modifyState('Done')" >Done!</text>
+            </div>
+            <!-- 当状态为Doing -->
+            <div class="changeState doingS" if="{{content.state=='Doing'}}">
+              <img class='change-state-img' src='/common/todo.png'>
+              <text class="change" onclick="modifyState('Todo')" >Do it later.</text>
+              <text>|</text>
+              <img class='change-state-img' src='/common/done.png'>
+              <text class="change" onclick="modifyState('Done')">Done!</text>
+            </div>
+            <!-- 当状态为Done -->
+            <div class="changeState doneS" if="{{content.state=='Done'}}">
+              <img class='change-state-img' src='/common/todo.png'>
+              <text class="change" onclick="modifyState('Todo')">Redo it.</text>
+              <text>|</text>
+              <img class='change-state-img' src='/common/doing.png'>
+              <text class="change" onclick="modifyState('Doing')">Do it now!</text>
+            </div>
+        </div>
+        </div>
+        <!-- 删除键 -->
+        <img class="delete-img" src="/common/delete.png" onclick="deleteItem"/>
+    </div>
+  </list-item>
+</template>
+
+<style lang="less">
+  /* 基本排列走向 */
+  .col-wrap{
+    flex-direction: column;
+  }
+  .row-wrap{
+    flex-direction: row;
+  }
+
+  /* 每个事项框整体 */
+  .ListItem{
+    margin: 10px;
+    background-color: #fcfcfc;
+    align-self: left;
+    border: 1px solid #000000;
+    background-size: 100%;
+    height: 200px;
+    width: 100%;
+    border-radius: 10px;
+    flex-direction: row;
+    columns: 1;
+  }
+
+  /* 事项名 */
+  .state-img{
+    width: 90px;
+    height: 90px;
+    margin-left: 5px;
+    margin-top: 10px;
+  }
+  .ListTxt{
+    font-size:80px;
+  }
+  .ListTxt:active{
+    color:#000000;
+  }
+
+  /* 删除键 */
+  .delete-img{
+    position: absolute;
+    bottom: 20px;
+    right:20px;
+    width:60px;
+    height: 60px;
+  }
+  .delete-img:active{
+    width: 70px;
+    height: 70px;
+  }
+
+  /* 时间和日期栏 */
+  .date-img{
+    margin-top: 4px;
+    margin-left: 10px;
+    margin-right: 6px;
+    width: 30px;
+    height: 30px;
+  }
+  .time-img{
+    margin-top: 4px;
+    margin-left: 50px;
+    margin-right: 6px;
+    width: 30px;
+    height: 30px;
+  }
+  .DateTxt{
+    font-size: 30px;
+  }
+  .DateTxt:active{
+    color:#000000;
+  }
+  .TimeTxt{
+    font-size: 30px;
+  }
+  .TimeTxt:active{
+    color:#000000;
+  }
+
+  /* 状态改变栏 */
+  .change-state-img{
+    margin-left: 10px;
+    height: 40px;
+    width: 40px;
+  }
+  .change{
+    padding-left: 10px;
+    padding-right: 10px;
+    color: #00000025;
+  }
+  .change:active{
+    color:#000000;
+  }
+</style>
+
+<script>
+  import prompt from '@system.prompt'
+  import router from '@system.router'
+  export default {
+    props: ['tarstate','content','idx'],
+    data:{ name:''},
+    
+    onInit() {
+      // 按照状态进行划分
+      this.display = (this.tarstate==this.content.state)
+      // 当事项名过长时只展示部分
+      this.name = this.content.Event
+      if(this.name.length>6){
+        this.name = this.name.substring(0,6)+"..."
+      }
+    },
+
+    // 改变状态
+    modifyState(s){
+      this.$dispatch('modifyState',{ newst: s, idx:this.idx})
+      this.$app.saveStorage()
+    },
+
+    // 删除事项
+    deleteItem(){
+      this.$dispatch('deleteItem',{idx:this.idx})
+      this.$app.saveStorage()
+    },
+
+    // 改变事项
+    changeItem(){
+      router.push({
+        uri: '/pages/Page3',
+        params:{nitem:'f', name:this.content.Event, detail:this.content.detail, state:this.content.state,
+           time:this.content.time, date:this.content.date, remind:this.content.remind, idx:this.idx},
+      })
+    }
+  }
+  
+</script>

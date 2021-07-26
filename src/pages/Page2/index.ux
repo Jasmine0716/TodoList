@@ -1,0 +1,316 @@
+<!-- 主页面 -->
+<import name="item-content" src="./ListItem.ux"></import>
+ 
+<template>
+  <div class="doc-page">
+    <!-- 头部标题部分 -->
+    <div class="page-title-wrap">
+      <div clss='title-wrap'>
+        <text class="title" >{{Title}}</text>
+        <img src='/common/smile-face.png' class='logo'/>
+      </div>
+      <text class='detail'>-{{titleDetail}}</text>
+      <!-- 增加图 -->
+      <img
+        src='/common/add.png'
+        class = 'addItem'
+        onclick='addItemPage'
+      />
+    </div>
+
+    <!-- 中部统计信息部分 -->
+    <div class="guild-bar">
+      <div class="count-info">
+        <text class="total-info">Total:{{Total}}</text>
+        <div class='count-detail'>
+          <text class='todo-count' disabled="{{disabled1}}">Todo:{{TodoCount}}</text>
+          <text>|</text>
+          <text class='doing-count' disabled="{{disabled2}}">Doing:{{DoingCount}}</text>
+          <text>|</text>
+          <text class='done-count' disabled="{{disabled3}}">Done:{{DoneCount}}</text>
+        </div>
+      </div>
+      <!-- 统计图 -->
+      <img
+        src='/common/summary.png'
+        class = "report"
+        onclick='ReportPage'
+      />
+    </div>
+
+    <!-- 事项表部分 -->
+    <tabs class="tabs" onchange="changeTabactive" index={{currTab}}>
+      <tab-content class="tab-content" scrollable="{{scrollable}}">
+
+        <!--To do-->
+        <div class="item-container">
+          <list class="List" >
+            <item-content for="(index, item) in EventList" tarstate='Todo' idx={{index}} content={{item}} ></item-content>
+          </list>
+        </div>
+
+        <!--Doing-->
+        <div class="item-container">
+          <list class="List">
+            <item-content for="(index, item) in EventList" tarState='Doing' idx={{index}} content={{item}} ></item-content>
+          </list>
+        </div>
+
+        <!--Done-->
+        <div class="item-container">
+          <list class="List">
+            <item-content for="(index, item) in EventList" tarState='Done' idx={{index}} content={{item}} ></item-content>
+          </list>
+        </div>
+      </tab-content>
+
+      <!-- 底部导航栏 -->
+      <tab-bar class="tab-bar">
+        <text class="tab-text" onclick="changeTab(0)">To do</text>
+        <text class="tab-text" onclick="changeTab(1)">Doing</text>
+        <text class="tab-text" onclick="changeTab(2)">Done</text>
+      </tab-bar>
+    </tabs>
+  </div>
+</template>
+
+<script>
+  import prompt from '@system.prompt'
+  import router from '@system.router'
+  export default {
+    // data
+    private: {
+      Title: 'TodoList',
+      titleDetail:'Live your life with high efficiency',
+      EventList: [ ],
+      scrollable:true,
+      currTab:0,
+      TodoCount:0,
+      DoingCount:0,
+      DoneCount:0,
+      Total:0,
+      disabled1:true,
+      disabled2:false,
+      disabled3:false,
+    },
+
+    onInit() {
+      // 页面标题
+      this.$page.setTitleBar({
+        text: 'Todo List'
+      })
+
+      // 更新数据
+      this.EventList = this.$app.getAppData('EventList')
+      this.currTab = this.$app.getAppData('currTab')
+      this.setCount()
+
+      // 监听是否对事项状态进行改变
+      this.$on('modifyState',(evt)=>{
+        const params = evt.detail
+        this.EventList[params.idx].state=params.newst
+        this.$app.setAppData('EventList',this.EventList)
+        this.setCount()
+      })
+
+      // 监听是否删除事项
+      this.$on('deleteItem',(evt)=>{
+        const params = evt.detail
+        this.EventList.splice(params.idx,1)
+        this.$app.setAppData('EventList',this.EventList)
+        this.setCount()
+      })
+    },
+    // 统计每种状态事项数量
+    setCount(){
+      this.$app.setCountData()
+      this.TodoCount = this.$app.getAppData('TodoCount')
+      this.DoingCount = this.$app.getAppData('DoingCount')
+      this.DoneCount = this.$app.getAppData('DoneCount')
+      this.Total = this.$app.getAppData('Total')
+    },
+
+    // 跳转到增加事项页面
+    addItemPage(){
+      router.push({
+        uri: '/pages/Page3',
+        params:{nitem:'t'},
+      })
+    },
+
+    // 跳转到总结页面
+    ReportPage(){
+      router.push({
+        uri: '/pages/Page4',
+      })
+    },
+
+    // 改变导航栏
+    changeTabactive(evt){
+      var t = evt.index
+      this.changeTab(t)
+    },
+
+    // 记录改变
+    changeTab(i){
+      this.currTab=i
+      this.$app.setAppData('currTab',i)
+      if(i===0){
+        this.disabled1=true
+        this.disabled2=false
+        this.disabled3=false
+      }
+      if(i===1){
+        this.disabled2=true
+        this.disabled1=false
+        this.disabled3=false
+      }
+      if(i===2){
+        this.disabled3=true
+        this.disabled2=false
+        this.disabled1=false
+      }
+    }
+  }
+</script>
+
+<style lang='less'>
+  @import '../../common/css/common.css';
+  
+  /* 头部标题部分 */
+  .page-title-wrap{
+    flex-direction: column;
+    align-items: center;
+    .title-wrap{
+      flex-direction: row;
+    }
+    .logo{
+        background-image: url('/common/smile-face.png');
+        width: 90px;
+        height: 90px;
+        margin: 10px 0px 0px 20px;
+      }
+    .title{
+        align-self: center;
+        font-size: 80px;
+        color: #424242;
+        font-family:'Times New Roman', Times, serif;
+      }
+    .detail{
+      font-size: 30px;
+      font-style: italic;
+      padding: 0px;
+      margin: 0px;
+      color: #636262;
+    }
+    .addItem{
+      margin-top: 30px;
+      margin-bottom: 20px;
+      height: 80px;
+      width: 80px;
+    }
+    .addItem:active{
+      margin-top: 20px;
+      margin-bottom: 10px;
+      height: 100px;
+      width: 100px;
+    }
+  }
+  
+  
+  /* 中部统计部分 */
+  .guild-bar{
+    flex-direction: row;
+    height: 100px;
+    padding: 0px;
+
+    .count-info{
+      flex-direction: column;
+      margin-left: 40px;
+
+    }
+
+    /* 基本格式 */
+    .total-info{
+      font-size: 35px;
+    }
+    .todo-count{
+      padding-left: 2px;
+      padding-right: 20px;
+    }
+    .doing-count{
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .done-count{
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    /* 对应项加粗 */
+    .todo-count:disabled{
+      font-weight:bold;
+    }
+    .doing-count:disabled{
+      font-weight:bold;
+    }
+    .done-count:disabled{
+      font-weight:bold;
+    }
+
+    /* 统计图 */
+    .report{
+      height: 80px;
+      width: 80px;
+      position: absolute;
+      right: 60px;
+    }
+    .report:active{
+      height: 95px;
+      width: 95px;
+    }
+  }
+  
+  /* 事项表部分 */
+  .tab-content{
+    margin: 0px;
+    padding: 0px;
+  }
+  
+  .item-container {
+    margin: 0px;
+    padding:0px;
+    flex-direction: column;
+  }
+  
+  .List{
+    padding: 0px;
+    margin: 0px;
+    border: 0px
+  }
+
+  .tabs {
+    flex: 1;
+    margin-top: 20px;
+    margin-right: 30px;
+    margin-left: 30px;
+    background-color: #ffffff;
+  }
+  .tab-content {
+    flex: 1;
+  }
+  /* 底部导航栏 */
+  .tab-bar {
+    align-self: flex-end;
+    height: 100px;
+    border-color: #bbbbbb;
+    color: #bbbbbb;
+    border-bottom-width: 1px;
+  }
+  .tab-text {
+    text-align: center;
+  }
+  .tab-text:active {
+    color: #f76160;
+  }
+</style>

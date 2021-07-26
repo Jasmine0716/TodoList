@@ -1,0 +1,79 @@
+<!-- 初始化进入页面 -->
+<template>
+  <!-- template里只能有一个根节点 -->
+  <div class="wrapper">
+    <img 
+    class = "logo"
+    src = "/common/smile-face.png"/>
+    <text class="title">{{ Title }}</text>
+    <text class="title-detail">- {{titleDetail}}</text>
+    <text class='enter' onclick="mainPage">Enter</text>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+
+export default {
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+    Title: 'TodoList',
+    titleDetail:'Live your life with high efficiency',
+  },
+  onInit(){
+    this.$page.setTitleBar({
+        text: 'Entering...'
+    })
+  },
+  mainPage(){
+      router.replace({
+        uri: '/pages/Page2',
+      })
+      router.clear()
+    },
+}
+</script>
+
+<style lang="less">
+  .wrapper{
+    flex-direction: column;
+    align-items: center;
+  }
+  .logo{
+    margin-top: 300px;
+    width: 200px;
+    height: 200px;
+    max-width: 50%;
+    max-height: 50%;
+  }
+  
+  .title{
+    font-size: 100px;
+    color: #333333;
+    margin-top: 20px;
+  }
+
+  .title-detail{
+    font-size: 35px;
+    color: #535353;
+    font-style: italic;
+    margin-top: 10px;
+  }
+
+  .enter{
+    border-radius: 30px;
+    border: 3px solid #535353;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 50px;
+    font-size: 35px;
+    color: #535353;
+  }
+  .enter:active{
+    border: 3px solid #000000;
+    font-size: 40px;
+    color: #000000;
+  }
+</style>

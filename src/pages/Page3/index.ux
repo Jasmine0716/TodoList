@@ -1,0 +1,422 @@
+<!-- 增改事项页面 -->
+<template>
+    <div class="doc-page">
+      <!-- 头部标题 -->
+      <div class='title-wrap'>
+        <img src="/common/edit-face.png" class='title-img'/>
+        <text class='title'>增改事项</text>
+      </div>
+
+      <!-- 时间名 -->
+      <div class="item-container">
+        <div class="row-wrap">
+          <img src="/common/change.png" class="item-img">
+          <text class="item-hint">事件名</text>
+        </div>
+        <div class='input-container'>
+          <input class="input-text" type="text" placeholder="请输入待办事项" 
+            onchange="changeEvent" value='{{name}}'></input>
+          <div class='speak-icon' ontouchstart="getSpeakingMessage('name')" ontouchend="endAsr"></div>
+        </div>
+      </div>
+
+      <!-- 详细描述 -->
+      <div class="item-container">
+        <div class="row-wrap">
+          <img src="/common/info.png" class="item-img">
+          <text class="item-hint">详细描述</text>
+        </div>
+        <div class='input-container'>
+          <input class="input-text" type="text" placeholder="详细描述待办事项" 
+            onchange="changeDetail" value='{{detail}}'></input>
+          <div class='speak-icon' ontouchstart="getSpeakingMessage('detail')" ontouchend="endAsr"></div>
+        </div>
+      </div>
+
+      <!-- 设置时间 -->
+      <div class="item-container">
+        <div class="row-wrap">
+          <img src="/common/time.png" class="item-img">
+          <text class="item-hint">时间</text>
+        </div>
+        <div class="item-content">
+          <picker class="picker" type="time" selected="{{time}}" value="{{time}}" onchange="getTime"></picker>
+        </div>
+      </div>
+
+      <!-- 设置日期 -->
+      <div class="item-container">
+        <div class="row-wrap">
+          <img src="/common/calendar.png" class="item-img">
+          <text class="item-hint">日期</text>
+        </div>
+        <div class="item-content">
+          <picker class="picker" type="date" selected="{{date}}" value="{{date}}" onchange="getDate"></picker>
+        </div>
+      </div>
+
+      <!-- 设置闹钟提醒 -->
+      <div class="item-container">
+        <div class="row-wrap">
+          <img src="/common/alarm.png" class="item-img">
+          <text class="item-hint">闹钟提醒（注意：只能设置当日闹钟）</text>
+        </div>
+        <div class="switch-container">
+            <switch class="switch" checked="{{remind}}" onchange="changeRemind"></switch>
+        </div>
+      </div>
+
+      <!-- 完成图标 -->
+      <div class="item-container">
+        <div class='finished-icon' onclick='finishEdit'></div>
+      </div>
+
+   </div>
+  </template>
+
+  <script>
+  import calendar from '@system.calendar' 
+  import alarm from '@system.alarm'
+  import asr from '@service.asr'
+  import prompt from '@system.prompt'
+  import router from '@system.router'
+  import vibrator from '@system.vibrator'
+
+    export default {
+      data: {
+        name:'',
+        detail:'',
+        state:'Todo',
+        time: '',
+        date: '',
+        remind:'',
+        nitem: 't',
+        idx:'',
+        nameBackUp:'',
+        detailBackUp:'',
+        speakType:'',
+      },
+
+      onInit () {
+        // 页面标题
+        this.$page.setTitleBar({
+          text: '增改事项'
+        })
+
+        // 初始化语音识别
+        this.initAsr()
+
+        // 时间和时期默认值为当下时刻对应值
+        const date = new Date()
+        if(this.date===''){ //日期
+          const Y = date.getFullYear()
+          const M = date.getMonth() + 1
+          const D = date.getDate()
+          this.date = Y + '-' + M + '-' + D
+        }
+        if(this.time===''){  //时间
+          const H = date.getHours()
+          const m = date.getMinutes()
+          this.time = H + ':' + m
+        }
+      },
+
+      // 修改事项名
+      changeEvent(evt){
+        this.name = evt.value
+      },
+
+      // 修改事项详细描述
+      changeDetail(evt){
+        this.detail = evt.value
+      },
+
+      // 修改时间
+      getTime (e) {
+        this.time = e.hour + ':' + e.minute
+      },
+
+      // 修改日期
+      getDate (e) {
+        this.date = e.year + '-' + (e.month + 1) + '-' + e.day
+      },
+
+      // 修改是否提醒
+      changeRemind(evt){
+        this.remind = evt.checked
+      },
+
+      // 完成编辑
+      finishEdit(){
+        // 震动提醒
+        vibrator.vibrate({ mode: 'short' })
+        vibrator.vibrate({ mode: 'short' })
+        vibrator.vibrate({ mode: 'short' })
+        // 判断是否满足闹钟提醒条件
+        if(this.remind){
+            const date = new Date()
+            const Y = date.getFullYear()
+            const M = date.getMonth() + 1
+            const D = date.getDate()
+            const H = date.getHours()
+            const m = date.getMinutes()
+            var d = this.date.split('-')
+            var t = this.time.split(':')
+
+            // 只有在提醒时间未到且是当天时才进行提醒
+            if((parseInt(d[0])===Y)&&(parseInt(d[1])===M)&&(parseInt(d[2])===D)&&
+                ((parseInt(t[0])*60+parseInt(t[1]))>(H*60+m))){
+                  alarm.setAlarm({
+                    hour: parseInt(t[0]),
+                    minute: parseInt(t[1]),
+                    message: this.name,
+                    success: function() {
+                        console.log('handling success')
+                    },
+                    fail: function(data, code) {
+                        console.log(`handling fail, code = ${code}`)
+                    },
+                    complete: function() {
+                        console.log('handling complete')
+                    }
+                  })
+                  prompt.showToast({message:'提醒设置成功！'})
+                }
+
+            // 不满足提醒条件则提示并修改remind
+            else{
+              prompt.showToast({message:'提醒时间已过或未到提醒日期。'})
+              this.remind = false
+            }
+        }
+
+        // 保存修改后/新事项
+        var newItem = { Event: this.name, date: this.date, time:this.time, state:this.state, detail:this.detail, remind:this.remind}
+        // 没有输入事项名
+        if(this.name==''){
+            prompt.showToast({message:'请输入待办事件！'})
+          }
+        // 保存并回到主页面
+        else{
+          // 新事项
+          if(this.nitem==='t'){
+            var EventList = this.$app.getAppData('EventList')
+            EventList.push(newItem)
+            this.$app.setAppData('EventList',EventList)
+            router.replace({
+              uri: '/pages/Page2',
+            })
+            router.clear()
+          }
+          // 对原事项进行修改
+          else{
+            var EventList = this.$app.getAppData('EventList')
+            EventList[this.idx] = newItem
+            this.$app.setAppData('EventList',EventList)
+            router.replace({
+              uri: '/pages/Page2',
+            })
+            router.clear()
+            // router.back()
+          }
+        }
+        // 保存数据到内存做备份
+        this.$app.saveStorage()
+      },
+
+      // 语音输入
+      getSpeakingMessage(tp){
+        prompt.showToast({message:'语音输入中...'})
+        this.startAsr(tp)
+      },
+
+      // 初始化语音组件
+      initAsr() {
+        asr.init({
+          fail: function () {
+            prompt.showToast({message:'init failed!'})
+          }
+        })
+        // 语音输入事件名项/事件详细描述
+        asr.onpartialresult = ({ result }) => {
+          if(this.speakType==='name'){
+            this.name = this.nameBackUp + `${result}`
+          }
+          if(this.speakType==='detail'){
+            this.detail = this.detailBackUp + `${result}`
+          }
+        }
+        asr.oncompleteresult = ({ result }) => {
+          if(this.speakType==='name'){
+            this.name = this.nameBackUp + `${result.match(/\[(.*)\]/)[1]}`
+          }
+          if(this.speakType==='detail'){
+            this.detail = this.detailBackUp + `${result.match(/\[(.*)\]/)[1]}`
+          }
+        }
+        asr.onerror = (error) => {
+          this.text = `onerror: ${error}`
+        }
+      },
+
+      // 开始语音识别
+      startAsr(tp) {
+        // 语音输入事件名项
+        if(tp==='name'){
+          this.speakType='name'
+          this.nameBackUp = this.name
+        }
+        // 语音输入事件详细描述
+        if(tp==='detail'){
+          this.speakType='detail'
+          this.detailBackUp = this.detail
+        }
+        asr.start({
+          success: function () {
+            //震动提醒
+            vibrator.vibrate({ mode: 'short' })
+            vibrator.vibrate({ mode: 'short' })
+            vibrator.vibrate({ mode: 'short' })
+          },
+          fail: function (data, code) {
+            this.name = `start fail, code=${code}, data=${data}`
+          }
+        })
+      },
+
+      // 结束语音识别
+      endAsr() {
+        asr.stop({
+          success: function () { },
+          fail: function (data, code) {
+            this.name = `stop fail, code=${code}, data=${data}`
+          }
+        })
+      },
+
+      // 销毁
+      onDestroy() {
+        asr.close()
+      },
+    }
+  </script>
+
+  <style lang='less'>
+    @import '../../common/css/common.css';
+
+    /* 标题部分 */
+    .title-wrap{
+      flex-direction: row;
+      justify-content: center;
+      margin-top: 50px;
+      .title-img{
+        align-self: center;
+        width: 80px;
+        height: 80px;
+        position: absolute;
+        left: 170px;
+      }
+      .title{
+        margin-left: 30px;
+        font-size: 55px;
+        color: #333333;
+      }
+    }
+
+    /* 布局 */
+    .row-wrap{
+      flex-direction: row;
+      margin-bottom: 15px;
+    }
+    
+    /* 提示部分 */
+    .item-container {
+      margin-top: 60px;
+      margin-bottom: 0px;
+      flex-direction: column;
+    }
+    .item-img{
+      width: 30px;
+      height: 30px;
+      margin-left: 10px;
+      align-self: center;
+    }
+    .item-hint {
+      align-self: center;
+      margin-left: 20px;
+      font-size: 30px;
+    }
+
+    /* 完成图表 */
+    .finished-icon{
+      background-image: url('/common/finished.png');
+      height: 100px;
+      width: 100px;
+      align-self: center;
+      margin-top: 0px;
+    }
+    .finished-icon:active{
+      background-image: url('/common/finish-face.png');
+      height: 110px;
+      width: 110px;
+      align-self: center;
+    }
+    
+    /* 输入框 */
+    .input-container {
+      height: 80px;
+      line-height: 80px;
+      padding-left: 0px;
+      padding-right: 30px;
+      margin-left: 0px;
+      margin-right: 0px;
+      margin-bottom: 20px;
+      border-top-width: 1px;
+      border-bottom-width: 1px;
+      border-color: #999999;
+      font-size: 30px;
+      background-color: #ffffff;
+      > input {
+        flex-grow: 1;
+        padding: 10px 10px;
+        font-size: 30px;
+      }
+    }
+
+    .input-container:active{
+      border-color: #ff0000;
+    }
+    
+    /* 语音输入图标 */
+    .speak-icon{
+      width: 50px;
+      height: 50px;
+      margin: 15px;
+      background-image: url("/common/speak.png");
+    }
+
+    .speak-icon:active{
+      width: 70px;
+      height: 70px;
+      margin: 5px;
+      background-image: url("/common/speaking.png");
+    }
+    
+    /* 时间和日期 */
+    .picker{
+      font-size: 30px;
+      position: absolute;
+      left: 10px;
+      top: 20px;
+    }
+    .picker:active{
+      color:#000000;
+    }
+    /* 闹钟开关 */
+    .switch-container{
+      padding-left: 0px;
+      margin-left: 0px;
+      align-items: flex-start;
+    }
+
+  </style>

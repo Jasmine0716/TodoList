@@ -1,0 +1,106 @@
+<script>
+/**
+ * 应用级别的配置，供所有页面公用
+ */
+import storage from '@system.storage' 
+
+const $utils = require('./helper/utils').default
+const $apis = require('./helper/apis').default
+
+/* @desc: 注入方法至全局 global,以便页面调用 */
+const hook2global = global.__proto__ || global
+hook2global.$utils = $utils
+hook2global.$apis = $apis
+
+export default {
+  onCreate () {
+    // 应用数据
+    this.dataCache = {
+      EventList: [
+        { Event: 'A', date:'2022-1-1', time:'23:11',state:'Todo', detail:'',remind:false },
+        { Event: 'B', date:'2027-1-1', time:'19:05',state:'Doing', detail:'',remind:false},
+        { Event: 'C', date:'2024-1-1', time:'09:30',state:'Done', detail:'',remind:false},
+      ],
+      currTab: 0,
+      TodoCount: 0,
+      DoingCount: 0,
+      DoneCount: 0,
+      Total:0,
+    }
+    // 读取内存中的数据
+    this.getStorage()
+  },
+
+  onDestroy() {
+    // 应用结束前保存数据到内存
+    this.saveStorage()
+  },
+
+  // 页面读取应用数据接口
+  getAppData (key) {
+    return this.dataCache[key]
+  },
+
+  // 页面设置应用数据接口
+  setAppData (key, val) {
+    this.dataCache[key] = val
+  },
+
+  // 更新每个状态事件数量
+  setCountData(){
+    this.dataCache.TodoCount=0
+    this.dataCache.DoingCount=0
+    this.dataCache.DoneCount=0
+    for(var i=0;i<this.dataCache.EventList.length;i++){
+      if(this.dataCache.EventList[i].state==='Todo') {
+        this.dataCache.TodoCount = this.dataCache.TodoCount+1
+      }
+      else if(this.dataCache.EventList[i].state==='Doing'){
+        this.dataCache.DoingCount = this.dataCache.DoingCount+1
+      }
+      else if(this.dataCache.EventList[i].state==='Done'){
+        this.dataCache.DoneCount = this.dataCache.DoneCount+1
+      }
+    }
+    this.dataCache.Total=this.dataCache.EventList.length
+  },
+
+  // 读取内存，更新数据
+  getStorage(){
+    let that = this.dataCache
+    storage.get({
+      key: 'msg',
+      success: function (data) {
+        if (data != '') {
+        let list = JSON.parse(data)
+        console.log(1)
+        that.EventList = list.EventList
+        that.TodoCount = list.TodoCount
+        that.DoingCount = list.DoingCount
+        that.DoneCount = list.DoneCount
+        that.Total = list.Total
+        console.log('handling success')
+        }
+      },
+      fail: function (data, code) {
+        console.log(`handling fail, code = ${code}`)
+      }
+    })
+  },
+
+  // 保存数据到内存
+  saveStorage(){
+    let that = this
+    storage.set({
+      key: 'msg',
+      value: that.dataCache,
+      success: function (data) {
+        console.log('handling success')
+      },
+      fail: function (data, code) {
+        console.log(`handling fail, code = ${code}`)
+      }
+    })
+  },
+}
+</script>

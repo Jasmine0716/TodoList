@@ -1,0 +1,246 @@
+<!-- 总结报告页面 -->
+<template>
+  <div class="doc-page">
+    <!-- 标题插图 -->
+    <div class='img-wrap'>
+        <div class='title-img'>
+    </div>
+    <div class="content">
+      <!-- 标题 -->
+      <canvas class="title-canvas" id="title-canvas"></canvas>
+      <!-- 饼状统计图 -->
+      <canvas class="count-canvas" id="count-canvas"></canvas>
+      <!-- 时间轴 -->
+      <canvas class="time-canvas" id="time-canvas"></canvas>
+    </div>
+  </div>
+</template>
+
+<style lang='less'>
+  /* 标题图标 */
+  .title-img{
+    position: absolute;
+    top:30px;
+    left:120px;
+    background-image: url('/common/summary-face.png');
+    width: 90px;
+    height: 90px;
+  } 
+
+  /* 基本格式 */
+  .content{
+    flex-direction: column;
+    align-items: center;
+    margin-left: 0px;
+  }
+
+  /* 标题文字 */
+  .title-canvas{
+    height: 110px;
+    width: 600px;
+    padding: 0px;
+    margin: 0px;
+  }
+
+  /* 饼状统计图 */
+  .count-canvas{
+    height: 350px;
+    width: 700px;
+    padding: 0px;
+    margin: 0px;
+  }
+
+  /* 时间轴 */
+  .time-canvas{
+    height: 950px;
+    width: 600px;
+    padding: 0px;
+    margin: 0px;
+  }
+</style>
+
+<script>
+  export default {
+    private: {
+      drawComplete: false,
+      Todo: 0,
+      Doing: 0,
+      Done: 0,
+      Total: 0,
+      Events:[],
+      nowDate: '',
+    },
+    
+    onInit() {
+      this.$page.setTitleBar({
+        text: '事项统计'
+      })
+      
+    },
+    onShow() {
+      // 绘制
+      if (!this.drawComplete) {
+        this.drawTitle()
+        this.drawPie()
+        this.drawTimeLine()
+      }
+    },
+
+    // 绘制标题
+    drawTitle(){
+      const canvas = this.$element('title-canvas')
+      const ctx = canvas.getContext('2d')
+      
+      ctx.beginPath()
+      ctx.fillStyle = '#333333'
+      ctx.textAlign = 'left'
+      ctx.font = '55px'
+      ctx.fillText('Events Report', 170, 100)
+    },
+
+    // 绘制饼状统计图
+    drawPie() {
+      // 计算每个部分弧度
+      this.setCount()
+      let percentList = [this.Todo / this.Total, this.Doing / this.Total, this.Done/this.Total]
+      let circleList = [0, ...percentList]
+      for (let i = 0; i < 3; i++) circleList[i + 1] += circleList[i]
+
+      const canvas = this.$element('count-canvas')
+      const ctx = canvas.getContext('2d')
+      const color = ['#f1efefe5', '#cecbcb', '#a3a2a2']
+
+      for (let i = 0; i < percentList.length; i++) {
+        percentList[i] = (percentList[i] * 100).toFixed(0)
+        if (percentList[i].length == 1) percentList[i] = '  ' + percentList[i] //错个位使数据整齐
+      }
+      // 文字部分
+      let textList = [`To do: ${this.Todo} (${percentList[0]}%)`, `Doing: ${this.Doing} (${percentList[1]}%)`, `Done: ${this.Done} (${percentList[2]}%)`]
+      
+      // 绘制图像
+      ctx.clearRect(0, 0, 750, 350)
+      ctx.lineWidth = 20
+      ctx.font = '28px'
+      for (let i = 0; i < 3; i++) {
+        // 绘制圆弧
+        ctx.beginPath()
+        ctx.strokeStyle = color[i]
+        ctx.arc(220, 175, 120, Math.PI * 2 * circleList[i], Math.PI * 2 * circleList[i + 1])
+        ctx.stroke()
+        // 绘制右侧圆点
+        ctx.beginPath()
+        ctx.fillStyle = color[i]
+        ctx.arc(450, 75 + 90 * i, 10, 0, 2 * Math.PI)
+        ctx.fill()
+        //绘制右侧数据
+        ctx.fillStyle = '#000000'
+        ctx.fillText(textList[i], 475, 75 + 90 * i + 8) 
+      }
+
+      //绘制饼状图中间部分
+      ctx.textAlign = 'center'
+      ctx.font = 'bold 55px'
+      ctx.fillText(`${this.Total}`, 220, 167)
+      ctx.font = '22px'
+      ctx.fillStyle = '#808080'
+      ctx.fillText('Events in total.', 220, 205)
+    },
+
+    // 绘制时间轴
+    drawTimeLine(){
+      this.getEvents()
+      const canvas = this.$element('time-canvas')
+      const ctx = canvas.getContext('2d')
+
+      // 绘制标题
+      ctx.beginPath()
+      ctx.fillStyle = '#333333'
+      ctx.textAlign = 'left'
+      ctx.font = '25px italic'
+      ctx.fillText(' of Nearest Events', 320, 100)
+
+      ctx.fillStyle = '#333333'
+      ctx.textAlign = 'center'
+      ctx.font = '50px monosapce'
+      ctx.fillText('TimeLine', 300, 65)
+
+      // 绘制轴线部分
+      ctx.font = '25px monosapce'
+      ctx.fillText(this.nowDate, 300, 140)
+
+      const linGrad1 = ctx.createLinearGradient(0, 300,0, 700)
+      linGrad1.addColorStop(0, '#afadad')
+      linGrad1.addColorStop(1, '#e9e6e6')
+      ctx.beginPath();
+      ctx.lineWidth = 6
+      ctx.strokeStyle = linGrad1
+      ctx.moveTo(300, 150);
+      ctx.lineTo(300, 950);
+      ctx.closePath();
+      ctx.stroke();
+
+      // 绘制每个事件标记
+      for(var i=0; i<this.Events.length; i++){
+        ctx.beginPath()
+        ctx.fillStyle = '#585858'
+        ctx.arc(300, 200+i*100, 5, 0, 2 * Math.PI)
+        ctx.fill()
+
+        // 左右交错标记
+        if(Math.pow(-1,i)===1){
+          ctx.textAlign = 'left'
+        }
+        else{
+          ctx.textAlign = 'right'
+        }
+        // 事件名
+        ctx.font = '35px'
+        ctx.fillText(this.Events[i].Event, 300+Math.pow(-1,i)*50, 200+i*100)
+        // 事件日期
+        ctx.font = '25px'
+        ctx.fillText(this.Events[i].date, 300+Math.pow(-1,i)*50, 240+i*100)
+      }
+    },
+
+    // 统计每种状态的时间数量
+    setCount(){
+      this.$app.setCountData()
+      this.Todo = this.$app.getAppData('TodoCount')
+      this.Doing = this.$app.getAppData('DoingCount')
+      this.Done = this.$app.getAppData('DoneCount')
+      this.Total = this.$app.getAppData('Total')
+    },
+    
+    // 统计最近的事件（在当前日期之后的事件，按照时间排列）
+    getEvents(){
+      this.Events=[]
+      // 现在事件
+      const date = new Date()
+      const Y = date.getFullYear()
+      const M = date.getMonth() + 1
+      const D = date.getDate()
+      this.nowDate = Y + '-' + M + '-' + D
+      var EventList = this.$app.getAppData('EventList')
+
+      // 最近的7件事
+      for(var i=0; (i<7)&&(i<EventList.length); i++){
+        var d = EventList[i].date.split('-')
+        var d2n = (parseInt(d[0])*12+parseInt(d[1]))*31+parseInt(d[2])
+        var dn = (Y*12+M)*31+D
+        if(d2n>=dn){
+          var name = EventList[i].Event
+          // 当事件名长度大于7时只显示部分
+          if(name.length>7){
+            name = name.substring(0,6)+'...'
+          }
+          var evt = {Event:name, date: EventList[i].date, dn:d2n}
+          this.Events.push(evt)
+        }
+      }
+      // 按照事件顺序排序
+	  	this.Events.sort(function(a,b){
+			  return a.dn - b.dn
+	  	})
+    }
+  }
+</script>

@@ -1,0 +1,25 @@
+/* 整体 */
+  .doc-page{
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .page-title-wrap {
+    padding-top: 50px;
+    padding-bottom: 80px;
+    justify-content: center;
+  }
+  
+  .item-container {
+    margin-bottom: 50px;
+    margin-right: 60px;
+    margin-left: 60px;
+    flex-direction: column;
+  }
+  .item-content {
+    flex-direction: column;
+    background-color: #ffffff;
+    padding: 30px;
+    margin-bottom: 30px;
+  }
+
